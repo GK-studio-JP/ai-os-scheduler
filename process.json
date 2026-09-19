@@ -1,0 +1,26 @@
+{
+  "schema": "ai-os-process:v1",
+  "id": "PROC-SCHEDULER",
+  "name": "scheduler",
+  "repository": "GK-studio-JP/ai-os-scheduler",
+  "responsibility": [
+    "runnable task selection",
+    "priority and dependency ordering",
+    "dispatch plan construction",
+    "bounded worker context selection"
+  ],
+  "excludes": [
+    "capability authorization",
+    "kernel policy changes",
+    "subsystem implementation decisions",
+    "ai-bb:v1 ownership semantics"
+  ],
+  "consumes": [
+    "ai-os-scheduler-view:v1",
+    "ai-os-projection-manifest:v1"
+  ],
+  "provides": [
+    "ai-os-dispatch-plan:v1",
+    "ai-os-dispatch:v1"
+  ]
+}
