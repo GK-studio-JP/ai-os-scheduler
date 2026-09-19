@@ -32,7 +32,7 @@ jobs:
           PY
 
           tar -xzf /tmp/repo.tar.gz
-          rm -f .github/workflows/bootstrap.yml
+          rm -f .github/workflows/plan.yml .github/workflows/test.yml
 
       - name: Commit bootstrap
         shell: bash
