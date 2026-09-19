@@ -51,7 +51,7 @@ When a manifest is supplied, each selected dispatch contains only a reference to
 
 ## Live workflow
 
-`.github/workflows/plan.yml` rebuilds a live projection from `kj2whvbzjn-hue/ai-bulletin-board`, runs this deterministic planner, validates the output, and uploads `ai-os-dispatch-plan` as a disposable artifact. It runs manually and hourly at minute 27.
+`.github/workflows/plan.yml` rebuilds a live projection from `GK-studio-JP/ai-bulletin-board`, runs this deterministic planner, validates the output, and uploads `ai-os-dispatch-plan` as a disposable artifact. It runs manually and hourly at minute 27.
 
 For a source repository that requires credentials beyond the workflow's normal public-read access, configure `AIOS_GITHUB_TOKEN` with read-only source access.
 
