@@ -70,8 +70,32 @@ jobs:
 
           print("BROWSER_WORKER_DISPATCH_PLAN_OK", plan["dispatch_count"])
           PY
+      - name: Read Browser Worker dispatch count
+        id: browser_dispatch
+        run: |
+          count="$(python - <<'PY'
+          import json
+          print(json.load(open("dispatch/browser-worker-plan.json"))["dispatch_count"])
+          PY
+          )"
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+          echo "Browser Worker dispatch count: $count"
       - uses: actions/upload-artifact@v4
         with:
           name: ai-os-browser-worker-dispatch
           path: dispatch/
           retention-days: 7
+      - name: Trigger Browser Worker launcher
+        if: steps.browser_dispatch.outputs.count == '1'
+        env:
+          AI_OS_CONTROL_TOKEN: ${{ secrets.AI_OS_CONTROL_TOKEN }}
+        run: |
+          if [ -z "$AI_OS_CONTROL_TOKEN" ]; then
+            echo "::warning::AI_OS_CONTROL_TOKEN is not configured; dispatch artifact was created but the Browser Worker launcher was not triggered."
+            exit 0
+          fi
+          GH_TOKEN="$AI_OS_CONTROL_TOKEN" gh workflow run launch-browser-worker.yml \
+            --repo GK-studio-JP/ai-os-runtime-browser-worker \
+            --ref main \
+            -f scheduler_run_id="$GITHUB_RUN_ID" \
+            -f max_steps=80
