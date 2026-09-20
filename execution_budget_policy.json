@@ -1,0 +1,13 @@
+{
+  "schema": "ai-os-execution-budget-policy:v1",
+  "authoritative": false,
+  "default": {
+    "schema": "ai-os-execution-budget:v1",
+    "authoritative": false,
+    "deadline_seconds": 1800,
+    "max_steps": null,
+    "max_tool_calls": null,
+    "max_tokens": null
+  },
+  "processes": {}
+}
