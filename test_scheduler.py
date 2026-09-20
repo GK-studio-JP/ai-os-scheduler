@@ -41,6 +41,31 @@ class SchedulerTests(unittest.TestCase):
         plan = build_plan(view([row("#1", 90, "PROC-A"), row("#2", 100, "PROC-B")]), process="PROC-A")
         self.assertEqual(plan["dispatches"][0]["task"], "#1")
 
+    def test_browser_worker_requires_trusted_admission(self):
+        trusted = row("#1", 100, "PROC-RUNTIME-BROWSER-WORKER")
+        trusted["admission"] = {
+            "author_login": "trusted-owner",
+            "author_association": "OWNER",
+            "trusted": True,
+        }
+        untrusted = row("#2", 200, "PROC-RUNTIME-BROWSER-WORKER")
+        untrusted["admission"] = {
+            "author_login": "outside-user",
+            "author_association": "NONE",
+            "trusted": False,
+        }
+        missing = row("#3", 300, "PROC-RUNTIME-BROWSER-WORKER")
+
+        plan = build_plan(
+            view([missing, untrusted, trusted]),
+            process="PROC-RUNTIME-BROWSER-WORKER",
+            limit=3,
+        )
+
+        self.assertEqual(plan["dispatch_count"], 1)
+        self.assertEqual([d["task"] for d in plan["dispatches"]], ["#1"])
+        self.assertTrue(plan["dispatches"][0]["admission"]["trusted"])
+
     def test_manifest_adds_capsule_reference(self):
         v = view([row("#7", 10)])
         manifest = {
