@@ -8,6 +8,7 @@ on:
     paths:
       - 'scheduler.py'
       - 'test_scheduler.py'
+      - 'execution_budget_policy.json'
       - 'process.json'
       - '.github/workflows/plan.yml'
 
@@ -24,7 +25,7 @@ jobs:
     timeout-minutes: 10
     env:
       GITHUB_TOKEN: ${{ github.token }}
-      AI_OS_CONTEXT_SHA: 68a3cafc4c13fdd61cd22a06acf071c9a139764a
+      AI_OS_CONTEXT_SHA: b99bd071ef9e595cb021e10218d6fc48cd3d6107
     steps:
       - uses: actions/checkout@v4
       - name: Checkout context compiler
@@ -42,22 +43,39 @@ jobs:
       - name: Build bounded projection
         run: aios-context snapshot --repo GK-studio-JP/ai-bulletin-board --state open --default-process PROC-BULLETIN --output-dir projection
       - name: Build dispatch plan
-        run: python scheduler.py plan --view projection/scheduler-view.json --manifest projection/manifest.json --limit 1 --output dispatch/plan.json
+        run: |
+          python scheduler.py plan \
+            --view projection/scheduler-view.json \
+            --manifest projection/manifest.json \
+            --budget-policy execution_budget_policy.json \
+            --limit 1 \
+            --output dispatch/plan.json
       - name: Validate dispatch plan
         run: |
           python - <<'PY'
           import json
           from pathlib import Path
+
           plan = json.loads(Path("dispatch/plan.json").read_text())
           assert plan["schema"] == "ai-os-dispatch-plan:v1"
           assert plan["authoritative"] is False
           assert plan["dispatch_count"] == len(plan["dispatches"])
+          assert plan["source"]["execution_budget_policy_fingerprint"].startswith("sha256:")
+
           for dispatch in plan["dispatches"]:
               assert dispatch["schema"] == "ai-os-dispatch:v1"
               assert dispatch["authoritative"] is False
               ctx = dispatch.get("context")
               assert ctx and ctx.get("capsule") and ctx.get("fingerprint")
               assert (Path("projection") / ctx["capsule"]).is_file()
+
+              budget = dispatch.get("execution_budget")
+              assert budget
+              assert budget["schema"] == "ai-os-execution-budget:v1"
+              assert budget["authoritative"] is False
+              assert isinstance(budget["deadline_seconds"], int)
+              assert budget["deadline_seconds"] > 0
+
           print("DISPATCH_PLAN_OK", plan["dispatch_count"])
           PY
       - uses: actions/upload-artifact@v4
