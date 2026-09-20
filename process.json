@@ -7,17 +7,20 @@
     "runnable task selection",
     "priority and dependency ordering",
     "dispatch plan construction",
-    "bounded worker context selection"
+    "bounded worker context selection",
+    "deterministic non-authoritative execution budget selection"
   ],
   "excludes": [
     "capability authorization",
+    "execution budget enforcement",
     "kernel policy changes",
     "subsystem implementation decisions",
     "ai-bb:v1 ownership semantics"
   ],
   "consumes": [
     "ai-os-scheduler-view:v1",
-    "ai-os-projection-manifest:v1"
+    "ai-os-projection-manifest:v1",
+    "ai-os-execution-budget-policy:v1"
   ],
   "provides": [
     "ai-os-dispatch-plan:v1",
