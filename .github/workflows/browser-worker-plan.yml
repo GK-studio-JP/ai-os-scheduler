@@ -8,6 +8,7 @@ on:
     paths:
       - 'scheduler.py'
       - 'test_scheduler.py'
+      - 'execution_budget_policy.json'
       - '.github/workflows/browser-worker-plan.yml'
 
 permissions:
@@ -23,7 +24,7 @@ jobs:
     timeout-minutes: 10
     env:
       GITHUB_TOKEN: ${{ github.token }}
-      AI_OS_CONTEXT_SHA: 68a3cafc4c13fdd61cd22a06acf071c9a139764a
+      AI_OS_CONTEXT_SHA: b99bd071ef9e595cb021e10218d6fc48cd3d6107
     steps:
       - uses: actions/checkout@v4
       - name: Checkout context compiler
@@ -45,6 +46,7 @@ jobs:
           python scheduler.py plan \
             --view projection/scheduler-view.json \
             --manifest projection/manifest.json \
+            --budget-policy execution_budget_policy.json \
             --limit 1 \
             --process PROC-RUNTIME-BROWSER-WORKER \
             --output dispatch/browser-worker-plan.json
@@ -62,6 +64,7 @@ jobs:
           assert plan["filters"]["process"] == "PROC-RUNTIME-BROWSER-WORKER"
           assert plan["dispatch_count"] == len(plan["dispatches"])
           assert plan["dispatch_count"] <= 1
+          assert plan["source"]["execution_budget_policy_fingerprint"].startswith("sha256:")
 
           for dispatch in plan["dispatches"]:
               assert dispatch["schema"] == "ai-os-dispatch:v1"
@@ -71,6 +74,13 @@ jobs:
               ctx = dispatch.get("context")
               assert ctx and ctx.get("capsule") and ctx.get("fingerprint")
               assert (Path("projection") / ctx["capsule"]).is_file()
+
+              budget = dispatch.get("execution_budget")
+              assert budget
+              assert budget["schema"] == "ai-os-execution-budget:v1"
+              assert budget["authoritative"] is False
+              assert isinstance(budget["deadline_seconds"], int)
+              assert budget["deadline_seconds"] > 0
 
           print("BROWSER_WORKER_DISPATCH_PLAN_OK", plan["dispatch_count"])
           PY
