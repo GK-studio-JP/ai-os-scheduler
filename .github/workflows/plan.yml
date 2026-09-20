@@ -24,7 +24,7 @@ jobs:
     timeout-minutes: 10
     env:
       GITHUB_TOKEN: ${{ github.token }}
-      AI_OS_CONTEXT_SHA: 6b03b3e41995043e78faa1081d94973336aca86a
+      AI_OS_CONTEXT_SHA: 68a3cafc4c13fdd61cd22a06acf071c9a139764a
     steps:
       - uses: actions/checkout@v4
       - name: Checkout context compiler
