@@ -127,11 +127,16 @@ def build_plan(
             item = manifest_by_task.get(task)
             if item is None:
                 raise ValueError(f"selected task missing from manifest: {task}")
-            if not item.get("capsule") or not item.get("fingerprint"):
+            if (
+                not item.get("capsule")
+                or not item.get("fingerprint")
+                or not item.get("content_digest")
+            ):
                 raise ValueError(f"selected task has incomplete context reference: {task}")
             context = {
                 "capsule": item["capsule"],
                 "fingerprint": item["fingerprint"],
+                "content_digest": item["content_digest"],
                 "through_comment_id": item.get("through_comment_id"),
             }
 
