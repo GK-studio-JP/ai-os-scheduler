@@ -73,10 +73,23 @@ class SchedulerTests(unittest.TestCase):
             "authoritative": False,
             "repository": "owner/board",
             "generated_at": "2026-09-19T00:00:00Z",
-            "tasks": [{"task": "#7", "capsule": "capsules/issue-7.json", "fingerprint": "sha256:x", "through_comment_id": 9}],
+            "tasks": [{"task": "#7", "capsule": "capsules/issue-7.json", "fingerprint": "sha256:x", "content_digest": "sha256:" + "a" * 64, "through_comment_id": 9}],
         }
         plan = build_plan(v, manifest)
         self.assertEqual(plan["dispatches"][0]["context"]["capsule"], "capsules/issue-7.json")
+        self.assertEqual(plan["dispatches"][0]["context"]["content_digest"], "sha256:" + "a" * 64)
+
+    def test_manifest_requires_content_digest(self):
+        v = view([row("#7", 10)])
+        manifest = {
+            "schema": "ai-os-projection-manifest:v1",
+            "authoritative": False,
+            "repository": "owner/board",
+            "generated_at": "2026-09-19T00:00:00Z",
+            "tasks": [{"task": "#7", "capsule": "capsules/issue-7.json", "fingerprint": "sha256:x", "through_comment_id": 9}],
+        }
+        with self.assertRaisesRegex(ValueError, "incomplete context reference"):
+            build_plan(v, manifest)
 
     def test_corrupt_runnable_fails_closed(self):
         bad = row("#1", 1)
