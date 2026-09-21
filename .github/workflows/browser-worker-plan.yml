@@ -23,7 +23,7 @@ jobs:
     timeout-minutes: 10
     env:
       GITHUB_TOKEN: ${{ github.token }}
-      AI_OS_CONTEXT_SHA: 68a3cafc4c13fdd61cd22a06acf071c9a139764a
+      AI_OS_CONTEXT_SHA: bbfa99c928c2130470c851829cea8b5cccefb09f
     steps:
       - uses: actions/checkout@v4
       - name: Checkout context compiler
@@ -69,7 +69,7 @@ jobs:
               assert dispatch["process"] == "PROC-RUNTIME-BROWSER-WORKER"
               assert dispatch["task"].startswith("#")
               ctx = dispatch.get("context")
-              assert ctx and ctx.get("capsule") and ctx.get("fingerprint")
+              assert ctx and ctx.get("capsule") and ctx.get("fingerprint") and ctx.get("content_digest")
               assert (Path("projection") / ctx["capsule"]).is_file()
 
           print("BROWSER_WORKER_DISPATCH_PLAN_OK", plan["dispatch_count"])
