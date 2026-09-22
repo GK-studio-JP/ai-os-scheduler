@@ -23,7 +23,7 @@ jobs:
     timeout-minutes: 10
     env:
       GITHUB_TOKEN: ${{ github.token }}
-      AI_OS_CONTEXT_SHA: bbfa99c928c2130470c851829cea8b5cccefb09f
+      AI_OS_CONTEXT_SHA: fc29e179a76f6ae6ff143721dc4803ca78503da2
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Checkout context compiler
@@ -70,7 +70,18 @@ jobs:
               assert dispatch["task"].startswith("#")
               ctx = dispatch.get("context")
               assert ctx and ctx.get("capsule") and ctx.get("fingerprint") and ctx.get("content_digest")
-              assert (Path("projection") / ctx["capsule"]).is_file()
+              capsule_path = Path("projection") / ctx["capsule"]
+              assert capsule_path.is_file()
+              capsule = json.loads(capsule_path.read_text())
+              source = capsule.get("source") or {}
+              replay = capsule.get("replay") or {}
+              assert ctx["fingerprint"] == capsule.get("fingerprint")
+              assert ctx["content_digest"] == capsule.get("content_digest")
+              assert ctx.get("through_comment_id") == source.get("canonical_through_comment_id")
+              assert str(source.get("task_spec_fingerprint") or "").startswith("sha256:")
+              assert "observed_comment_id" in source
+              assert "canonical_through_comment_id" in source
+              assert "idempotency_conflicts" in replay
 
           print("BROWSER_WORKER_DISPATCH_PLAN_OK", plan["dispatch_count"])
           PY
