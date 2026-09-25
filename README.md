@@ -30,12 +30,12 @@ A dispatch plan is deliberately `authoritative: false`. It is a scheduling decis
 
 ## Deterministic policy v0.1
 
-Only rows already present in `runnable` are accepted. The Scheduler fails closed if a runnable row is not open, is history-unsafe, is blocked, or lacks explicit routing. Candidates are ordered by:
+Only rows already present in `runnable` are accepted. The Scheduler fails closed if a runnable row is not open, is history-unsafe, is blocked, or lacks explicit routing. Every dispatch candidate must also carry `admission.trusted=true`; missing or false admission is excluded for every process before process filtering or ordering. Candidates are ordered by:
 
 1. priority descending;
 2. numeric task suffix ascending.
 
-An optional process filter can further restrict the queue.
+An optional process filter can further restrict the admitted queue.
 
 ## Local use
 
@@ -60,6 +60,7 @@ For a source repository that requires credentials beyond the workflow's normal p
 - Scheduler projections and dispatch plans remain non-authoritative.
 - `history_unsafe` never becomes runnable work.
 - Unrouted work is never guessed into a process.
+- Missing or untrusted admission never becomes a dispatch candidate, regardless of process.
 - The Scheduler does not change Kernel authority policy.
 - The Scheduler does not inspect unrelated subsystem internals.
 - A runtime must refresh canonical GitHub state before ownership-sensitive mutation.

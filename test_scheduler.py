@@ -13,8 +13,8 @@ def view(rows):
     }
 
 
-def row(task, priority, process="PROC-A"):
-    return {
+def row(task, priority, process="PROC-A", trusted=True):
+    value = {
         "task": task,
         "title": task,
         "issue_url": f"https://example.invalid/{task}",
@@ -29,6 +29,13 @@ def row(task, priority, process="PROC-A"):
         "next_action": None,
         "history_safe": True,
     }
+    if trusted is not None:
+        value["admission"] = {
+            "author_login": "trusted-owner" if trusted else "outside-user",
+            "author_association": "OWNER" if trusted else "NONE",
+            "trusted": trusted,
+        }
+    return value
 
 
 class SchedulerTests(unittest.TestCase):
@@ -41,30 +48,34 @@ class SchedulerTests(unittest.TestCase):
         plan = build_plan(view([row("#1", 90, "PROC-A"), row("#2", 100, "PROC-B")]), process="PROC-A")
         self.assertEqual(plan["dispatches"][0]["task"], "#1")
 
-    def test_browser_worker_requires_trusted_admission(self):
-        trusted = row("#1", 100, "PROC-RUNTIME-BROWSER-WORKER")
-        trusted["admission"] = {
-            "author_login": "trusted-owner",
-            "author_association": "OWNER",
-            "trusted": True,
-        }
-        untrusted = row("#2", 200, "PROC-RUNTIME-BROWSER-WORKER")
-        untrusted["admission"] = {
-            "author_login": "outside-user",
-            "author_association": "NONE",
-            "trusted": False,
-        }
-        missing = row("#3", 300, "PROC-RUNTIME-BROWSER-WORKER")
+    def test_all_processes_require_trusted_admission(self):
+        trusted = row("#1", 100, "PROC-A", trusted=True)
+        untrusted = row("#2", 300, "PROC-A", trusted=False)
+        missing = row("#3", 400, "PROC-A", trusted=None)
+        browser_untrusted = row("#4", 500, "PROC-RUNTIME-BROWSER-WORKER", trusted=False)
+        browser_trusted = row("#5", 90, "PROC-RUNTIME-BROWSER-WORKER", trusted=True)
 
         plan = build_plan(
-            view([missing, untrusted, trusted]),
-            process="PROC-RUNTIME-BROWSER-WORKER",
-            limit=3,
+            view([missing, untrusted, trusted, browser_untrusted, browser_trusted]),
+            limit=10,
         )
 
-        self.assertEqual(plan["dispatch_count"], 1)
-        self.assertEqual([d["task"] for d in plan["dispatches"]], ["#1"])
-        self.assertTrue(plan["dispatches"][0]["admission"]["trusted"])
+        self.assertEqual(plan["candidate_count"], 2)
+        self.assertEqual([d["task"] for d in plan["dispatches"]], ["#1", "#5"])
+        self.assertTrue(all(d["admission"]["trusted"] for d in plan["dispatches"]))
+
+    def test_process_filter_fails_closed_on_untrusted_rows(self):
+        plan = build_plan(
+            view([
+                row("#1", 300, "PROC-B", trusted=False),
+                row("#2", 200, "PROC-B", trusted=None),
+                row("#3", 100, "PROC-B", trusted=True),
+            ]),
+            process="PROC-B",
+            limit=3,
+        )
+        self.assertEqual(plan["candidate_count"], 1)
+        self.assertEqual([d["task"] for d in plan["dispatches"]], ["#3"])
 
     def test_manifest_adds_capsule_reference(self):
         v = view([row("#7", 10)])
