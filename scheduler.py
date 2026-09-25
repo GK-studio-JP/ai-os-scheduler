@@ -12,7 +12,6 @@ MANIFEST_SCHEMA = "ai-os-projection-manifest:v1"
 PLAN_SCHEMA = "ai-os-dispatch-plan:v1"
 DISPATCH_SCHEMA = "ai-os-dispatch:v1"
 POLICY = "priority-desc/task-asc"
-BROWSER_WORKER_PROCESS = "PROC-RUNTIME-BROWSER-WORKER"
 
 
 def _read(path: str) -> Any:
@@ -43,6 +42,11 @@ def _priority(row: dict[str, Any]) -> int:
 
 def _sort_key(row: dict[str, Any]) -> tuple[int, int, str]:
     return (-_priority(row), _task_number(row.get("task")), str(row.get("task")))
+
+
+def _trusted(row: dict[str, Any]) -> bool:
+    admission = row.get("admission")
+    return isinstance(admission, dict) and admission.get("trusted") is True
 
 
 def validate_view(view: dict[str, Any]) -> None:
@@ -109,11 +113,7 @@ def build_plan(
     if manifest is not None:
         manifest_by_task = validate_manifest(view, manifest)
 
-    candidates = [
-        row for row in view["runnable"]
-        if row.get("process") != BROWSER_WORKER_PROCESS
-        or (isinstance(row.get("admission"), dict) and row["admission"].get("trusted") is True)
-    ]
+    candidates = [row for row in view["runnable"] if _trusted(row)]
     if process:
         candidates = [row for row in candidates if row.get("process") == process]
     candidates.sort(key=_sort_key)
